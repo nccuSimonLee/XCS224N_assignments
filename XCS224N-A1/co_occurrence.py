@@ -23,6 +23,10 @@ def distinct_words(corpus):
     num_corpus_words = -1
     
 ### SOLUTION BEGIN
+    corpus_words = list(set([word for sent_words in corpus
+                                  for word in sent_words]))
+    corpus_words = list(sorted(corpus_words))
+    num_corpus_words = len(corpus_words)
 ### SOLUTION END
 
     return corpus_words, num_corpus_words
@@ -51,6 +55,16 @@ def compute_co_occurrence_matrix(corpus, window_size=4):
     word2Ind = {}
     
 ### SOLUTION BEGIN
+    word2Ind = {word: idx for idx, word in enumerate(words)}
+    M = np.zeros((num_words, num_words))
+    for sent_words in corpus:
+        for center_idx, center_word in enumerate(sent_words):
+            left = 0 if center_idx < window_size else center_idx - window_size
+            right = center_idx + window_size + 1
+            for word in sent_words[left:center_idx]:
+                M[word2Ind[center_word], word2Ind[word]] += 1
+            for word in sent_words[(center_idx + 1):right]:
+                M[word2Ind[center_word], word2Ind[word]] += 1
 ### SOLUTION END
 
     return M, word2Ind
@@ -74,6 +88,8 @@ def reduce_to_k_dim(M, k=2):
     print("Running Truncated SVD over %i words..." % (M.shape[0]))
     
     ### SOLUTION BEGIN
+    svd = TruncatedSVD(n_components=k, n_iter=n_iters)
+    M_reduced = svd.fit_transform(M)
     ### SOLUTION END
 
     print("Done.")
