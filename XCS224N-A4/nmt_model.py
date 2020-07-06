@@ -162,7 +162,12 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/torch.html#torch.cat
         ###     Tensor Permute:
         ###         https://pytorch.org/docs/stable/tensors.html#torch.Tensor.permute
-
+        X = self.model_embeddings.source(source_padded)  # (src_len, b, e)
+        enc_hiddens, (last_hidden, last_cell) = self.encoder(nn.utils.rnn.pack_padded_sequence(X, source_lengths))
+        enc_hiddens = nn.utils.rnn.pad_packed_sequence(enc_hiddens)[0].transpose(0, 1)  # (b, src_len, 2*h)
+        last_hidden = torch.cat((last_hidden[0], last_hidden[1]), 1)  # (b, 2*h)
+        last_cell = torch.cat((last_cell[0], last_cell[1]), 1)  # (b, 2*h)
+        dec_init_state = (self.h_projection(last_hidden), self.c_projection(last_cell))
         ### END YOUR CODE
 
         return enc_hiddens, dec_init_state
