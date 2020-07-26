@@ -45,8 +45,16 @@ class CharDecoder(nn.Module):
         """
         ### YOUR CODE HERE for part 2b
         ### TODO - Implement the forward pass of the character decoder.
-        
-        
+        scores, dec_hidden = None, None
+        x_t = self.decoderCharEmb(input)  # (length, batch_size, embed_size)
+        h_t, (h_n, c_n) = self.charDecoder(x_t, dec_hidden)  # (length, batch_size, hidden_size), (2, batch_size, hidden_size) * 2
+        length, batch_size, hidden_size = h_t.shape
+        # (length, batch_size, target_char_size)
+        scores = self.char_output_projection(h_t.view(length * batch_size, hidden_size)).view(length, batch_size, -1)
+        h_n = h_n.view(2, 1, batch_size, hidden_size)
+        c_n = h_n.view(2, 1, batch_size, hidden_size)
+        dec_hidden = (h_n[1].squeeze(1), c_n[1].squeeze(1))
+        return (scores, dec_hidden)
         ### END YOUR CODE 
 
 
