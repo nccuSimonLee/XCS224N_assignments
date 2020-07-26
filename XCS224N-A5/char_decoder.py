@@ -28,7 +28,7 @@ class CharDecoder(nn.Module):
         self.target_vocab = target_vocab
         self.hidden_size = hidden_size
         self.char_embedding_size = char_embedding_size
-        self.charDecoder = nn.LSTM(char_embedding_size, hidden_size, num_layers=2)
+        self.charDecoder = nn.LSTM(char_embedding_size, hidden_size, num_layers=1)
         self.char_output_projection = nn.Linear(hidden_size, len(target_vocab.char2id))
         self.decoderCharEmb = nn.Embedding(len(target_vocab.char2id), char_embedding_size, target_vocab.char2id['<pad>'])
         ### END YOUR CODE
@@ -48,13 +48,10 @@ class CharDecoder(nn.Module):
         ### TODO - Implement the forward pass of the character decoder.
         scores, dec_hidden = None, None
         x_t = self.decoderCharEmb(input)  # (length, batch_size, embed_size)
-        h_t, (h_n, c_n) = self.charDecoder(x_t, dec_hidden)  # (length, batch_size, hidden_size), (2, batch_size, hidden_size) * 2
+        h_t, dec_hidden = self.charDecoder(x_t, dec_hidden)  # (length, batch_size, hidden_size), (1, batch_size, hidden_size) * 2
         length, batch_size, hidden_size = h_t.shape
         # (length, batch_size, target_char_size)
         scores = self.char_output_projection(h_t.view(length * batch_size, hidden_size)).view(length, batch_size, -1)
-        h_n = h_n.view(2, 1, batch_size, hidden_size)
-        c_n = h_n.view(2, 1, batch_size, hidden_size)
-        dec_hidden = (h_n[1].squeeze(1), c_n[1].squeeze(1))
         return (scores, dec_hidden)
         ### END YOUR CODE 
 
@@ -96,7 +93,8 @@ class CharDecoder(nn.Module):
         ###      - Use torch.tensor(..., device=device) to turn a list of character indices into a tensor.
         ###      - We use curly brackets as start-of-word and end-of-word characters. That is, use the character '{' for <START> and '}' for <END>.
         ###        Their indices are self.target_vocab.start_of_word and self.target_vocab.end_of_word, respectively.
-        
+        _, batch_size, hidden_size = initialStates
+        decodeWords = ['{']
         
         ### END YOUR CODE
 
