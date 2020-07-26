@@ -154,9 +154,12 @@ class VocabEntry(object):
         ### TODO: 
         ###     Connect `words2charindices()` and `pad_sents_char()` which you've defined in 
         ###     previous parts
-        
-
+        sents_char = self.words2charindices(sents)
+        padded_sents_char = pad_sents_char(sents_char)  # (batch_size, max_sent_len, max_word_len)
+        sents_var = torch.tensor(padded_sents_char).transpose(0, 1)  # (max_sent_len, batch_size, max_word_len)
+        sents_var.to(device)
         ### END YOUR CODE
+        return sents_var
 
     def to_input_tensor(self, sents: List[List[str]], device: torch.device) -> torch.Tensor:
         """ Convert list of sentences (words) into tensor with necessary padding for 
