@@ -3,6 +3,7 @@
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class CharDecoder(nn.Module):
     def __init__(self, hidden_size, char_embedding_size=50, target_vocab=None):
@@ -71,8 +72,11 @@ class CharDecoder(nn.Module):
         ###
         ### Hint: - Make sure padding characters do not contribute to the cross-entropy loss.
         ###       - char_sequence corresponds to the sequence x_1 ... x_{n+1} from the handout (e.g., <START>,m,u,s,i,c,<END>).
-
-
+        scores, _ = self.forward(char_sequence, dec_hidden)  # (length, batch_size, target_char_size)
+        length, batch_size = char_sequence.shape
+        loss = F.cross_entropy(scores.view((length * batch_size, -1)), char_sequence.view((length * batch_size,)),
+                               ignore_index=self.target_vocab.char2id['<pad>'], reduction='sum')
+        return loss
         ### END YOUR CODE
 
     def decode_greedy(self, initialStates, device, max_length=21):
