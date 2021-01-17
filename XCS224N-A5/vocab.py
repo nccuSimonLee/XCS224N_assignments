@@ -156,8 +156,7 @@ class VocabEntry(object):
         ###     previous parts
         sents_char = self.words2charindices(sents)
         padded_sents_char = pad_sents_char(sents_char, self.char2id['<pad>'])  # (batch_size, max_sent_len, max_word_len)
-        sents_var = torch.tensor(padded_sents_char).transpose(0, 1)  # (max_sent_len, batch_size, max_word_len)
-        sents_var.to(device)
+        sents_var = torch.tensor(padded_sents_char, dtype=torch.long, device=device).transpose(0, 1)  # (max_sent_len, batch_size, max_word_len)
         ### END YOUR CODE
         return sents_var
 

@@ -13,9 +13,7 @@ class Highway(nn.Module):
         super(Highway, self).__init__()
         self.embed_size = embed_size
         self.w_proj = nn.Linear(embed_size, embed_size)
-        nn.init.xavier_uniform_(self.w_proj.weight)
         self.w_gate = nn.Linear(embed_size, embed_size)
-        nn.init.xavier_uniform_(self.w_gate.weight)
 
     def forward(self, x_convout):
         """
@@ -27,7 +25,7 @@ class Highway(nn.Module):
         """
         x_proj = F.relu(self.w_proj(x_convout))
         x_gate = torch.sigmoid(self.w_gate(x_convout))
-        x_highway = x_gate * x_proj + (1 - x_gate) * x_gate
+        x_highway = x_gate * x_proj + (1 - x_gate) * x_convout
         return x_highway
 ### END YOUR CODE 
 

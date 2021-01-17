@@ -30,11 +30,11 @@ class CharDecoder(nn.Module):
         self.char_embedding_size = char_embedding_size
         self.charDecoder = nn.LSTM(char_embedding_size, hidden_size, num_layers=1)
         self.char_output_projection = nn.Linear(hidden_size, len(target_vocab.char2id))
+        nn.init.xavier_uniform_(self.char_output_projection.weight)
         self.decoderCharEmb = nn.Embedding(len(target_vocab.char2id), char_embedding_size, target_vocab.char2id['<pad>'])
         ### END YOUR CODE
 
 
-    
     def forward(self, input, dec_hidden=None):
         """ Forward pass of character decoder.
 
@@ -46,12 +46,9 @@ class CharDecoder(nn.Module):
         """
         ### YOUR CODE HERE for part 2b
         ### TODO - Implement the forward pass of the character decoder.
-        scores, dec_hidden = None, None
         x_t = self.decoderCharEmb(input)  # (length, batch_size, embed_size)
         h_t, dec_hidden = self.charDecoder(x_t, dec_hidden)  # (length, batch_size, hidden_size), (1, batch_size, hidden_size) * 2
-        length, batch_size, hidden_size = h_t.shape
-        # (length, batch_size, target_char_size)
-        scores = self.char_output_projection(h_t.view(length * batch_size, hidden_size)).view(length, batch_size, -1)
+        scores = self.char_output_projection(h_t)  # (length, batch_size, target_char_size)
         return (scores, dec_hidden)
         ### END YOUR CODE 
 
@@ -69,9 +66,9 @@ class CharDecoder(nn.Module):
         ###
         ### Hint: - Make sure padding characters do not contribute to the cross-entropy loss.
         ###       - char_sequence corresponds to the sequence x_1 ... x_{n+1} from the handout (e.g., <START>,m,u,s,i,c,<END>).
-        scores, _ = self.forward(char_sequence, dec_hidden)  # (length, batch_size, target_char_size)
-        length, batch_size = char_sequence.shape
-        loss = F.cross_entropy(scores.view((length * batch_size, -1)), char_sequence.view((length * batch_size,)),
+        scores, _ = self.forward(char_sequence[:-1], dec_hidden)  # (length, batch_size, target_char_size)
+        length, batch_size, _ = scores.shape
+        loss = F.cross_entropy(scores.reshape((length * batch_size, -1)), char_sequence[1:].reshape((length * batch_size,)),
                                ignore_index=self.target_vocab.char2id['<pad>'], reduction='sum')
         return loss
         ### END YOUR CODE
@@ -95,20 +92,28 @@ class CharDecoder(nn.Module):
         ###        Their indices are self.target_vocab.start_of_word and self.target_vocab.end_of_word, respectively.
         _, batch_size, hidden_size = initialStates[0].shape
         decodeWords = [[self.target_vocab.start_of_word] for _ in range(batch_size)]
+        #print(decodeWords)
         decoding_words = decodeWords[:]
         dec_states = initialStates
-        for _ in range(max_length):
+        word_len = 1
+        while decoding_words and word_len <= max_length:
             inputs = torch.tensor([[chars[-1] for chars in decoding_words]], dtype=torch.long, device=device)
             scores, dec_states = self.forward(inputs, dec_states)
             char_indices = scores.squeeze(0).argmax(dim=1)
-            for char_idx, chars in zip(char_indices, decoding_words):
-                chars.append(int(char_idx))
-                if int(char_idx) == self.target_vocab.end_of_word:
-                    decoding_words.remove(chars)
-            if not decoding_words:
-                break
-        decodeWords = [''.join([self.target_vocab.id2char[id_] for id_ in chars])
+            #print(char_indices)
+            remain_indices = []
+            for i, (char_idx, chars) in enumerate(zip(char_indices, decoding_words)):
+                if int(char_idx) != self.target_vocab.end_of_word:
+                    chars.append(int(char_idx))
+                    remain_indices.append(i)
+            decoding_words = [decoding_words[i] for i in remain_indices]
+            dec_states = (dec_states[0][:, remain_indices, :], dec_states[1][:, remain_indices, :])
+            word_len += 1
+            #print(decoding_words)
+        decodeWords = [''.join([self.target_vocab.id2char[id_] for id_ in chars[1:]])
                        for chars in decodeWords]        
+        #print(decodeWords)
+        #print(decodeWords)
         return decodeWords
         ### END YOUR CODE
 

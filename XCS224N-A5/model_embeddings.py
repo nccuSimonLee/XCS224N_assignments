@@ -37,7 +37,7 @@ class ModelEmbeddings(nn.Module):
         self.embed_size = embed_size
         self.vocab = vocab
         pad_token_idx = vocab.char2id['<pad>']
-        self.embeddings = nn.Embedding(len(vocab.char2id), embed_size, pad_token_idx)
+        self.embeddings = nn.Embedding(len(vocab.char2id), 50, pad_token_idx)
         self.conv = CNN(embed_size, 5)
         self.highway = Highway(embed_size)
         self.dropout = nn.Dropout(p=0.3)
@@ -60,8 +60,7 @@ class ModelEmbeddings(nn.Module):
         ### YOUR CODE HERE for part 1f
         output = []
         for x_padded in input_tensor.split(1, dim=0):
-            x_padded = x_padded.squeeze(0)  # (batch_size, max_word_length)
-            x_emb = self.embeddings(x_padded)  # (batch_size, max_word_length, embed_size)
+            x_emb = self.embeddings(x_padded.squeeze(0))  # (batch_size, max_word_length, embed_size)
             x_reshaped = x_emb.transpose(1, 2)  # (batch_size, embed_size, max_word_length)
             x_convout = self.conv(x_reshaped)  # (batch_size, embed_size)
             x_highway = self.highway(x_convout)  # (batch_size, embed_size)

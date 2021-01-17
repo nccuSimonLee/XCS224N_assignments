@@ -13,8 +13,7 @@ class CNN(nn.Module):
         super(CNN, self).__init__()
         self.embed_size = embed_size
         self.kernel_size = kernel_size
-        self.conv1d = nn.Conv1d(embed_size, embed_size, kernel_size)
-        nn.init.xavier_uniform_(self.conv1d.weight)
+        self.conv1d = nn.Conv1d(50, embed_size, kernel_size)
 
     def forward(self, x_reshaped):
         """
@@ -24,7 +23,7 @@ class CNN(nn.Module):
         Returns:
             x_convout: tensor (batch_size, embed_size)
         """
-        x_conv = self.conv1d(x_reshaped)  # (batch_size, embed_size, word_len - kernel_size + 1)
+        x_conv = F.relu(self.conv1d(x_reshaped))  # (batch_size, embed_size, word_len - kernel_size + 1)
         x_convout = torch.max(x_conv, dim=2).values  # (batch_size, embed_size)
         return x_convout
 
